@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>フィル・ジェネレーター</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;700;900&display=swap">
+<script src="https://cdn.jsdelivr.net/npm/vexflow@4.2.5/build/cjs/vexflow.js"></script>
+<style>
+:root{--bg:#eef1f3;--surf:#fff;--ink:#14202b;--mute:#667684;--line:#cfd7dd;--S:#d9482b;--T:#2f6fb5;--F:#7a4fb0;--K:#14202b;--rest:#e3e8ec;--hi:#f2b53a;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#10171e;--surf:#18222c;--ink:#e8eef2;--mute:#8a9aa7;--line:#2a3743;--S:#f0694c;--T:#5b9be0;--F:#a47fdc;--K:#cfd8df;--rest:#222e39;--hi:#f2b53a}}
+:root[data-theme="dark"]{--bg:#10171e;--surf:#18222c;--ink:#e8eef2;--mute:#8a9aa7;--line:#2a3743;--S:#f0694c;--T:#5b9be0;--F:#a47fdc;--K:#cfd8df;--rest:#222e39;--hi:#f2b53a}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:'Zen Kaku Gothic New',system-ui,sans-serif;line-height:1.5;padding:16px;max-width:760px;margin:0 auto}
+h1{font-size:22px;font-weight:900;margin:4px 0 14px}
+.bars{display:flex;flex-direction:column;gap:10px}
+.bar{background:var(--surf);border:1px solid var(--line);border-radius:10px;padding:8px 8px 10px}
+.bar.on{border-color:var(--hi);box-shadow:0 0 0 2px var(--hi)}
+.bn{font-size:12px;color:var(--mute);margin:0 0 4px 2px}
+.row{display:grid;grid-template-columns:repeat(4,1fr);gap:0;position:relative}
+.row .tick{position:absolute;top:-2px;bottom:-2px;width:0;border-left:1px dashed var(--line)}
+.ev{padding:0 3px;min-width:0}
+.ev .tag{font-size:10px;color:var(--mute);text-align:center;margin-bottom:2px;white-space:nowrap;overflow:hidden}
+.slots{display:flex;gap:2px}
+.sl{flex:1;min-width:0;height:34px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:14px;color:#fff}
+.sl.S{background:var(--S)}.sl.T{background:var(--T)}.sl.F{background:var(--F)}.sl.K{background:var(--K);color:var(--bg)}
+.sl.r{background:var(--rest);color:var(--mute);font-weight:400}
+.ev.beat.on .slots{outline:2px solid var(--hi);outline-offset:1px;border-radius:6px}
+.ctl{margin-top:16px;background:var(--surf);border:1px solid var(--line);border-radius:10px;padding:12px}
+.ctl h2{font-size:13px;margin:0 0 6px;color:var(--mute);font-weight:700}
+.chips{display:flex;flex-wrap:wrap;gap:6px 12px;margin-bottom:10px}
+label{font-size:14px;display:flex;align-items:center;gap:5px}
+input[type=checkbox]{width:18px;height:18px;accent-color:var(--T)}
+input[type=range]{width:100%;accent-color:var(--T)}
+.line{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.line span{font-size:14px;min-width:72px}
+.line b{min-width:44px;text-align:right;font-size:14px}
+.btns{display:flex;gap:8px;position:sticky;bottom:0;padding:10px 0 4px;background:linear-gradient(transparent,var(--bg) 30%)}
+button{font:inherit;font-weight:900;font-size:16px;border:0;border-radius:10px;padding:13px 14px;cursor:pointer;color:#fff;background:var(--T);flex:1}
+button.sec{background:var(--surf);color:var(--ink);border:1px solid var(--line);flex:0 0 auto}
+button:focus-visible,input:focus-visible{outline:3px solid var(--hi);outline-offset:2px}
+.note{font-size:12px;color:var(--mute);margin:8px 2px 0}
+.nt{overflow:hidden}.nt svg{display:block;max-width:100%}.nt:empty{display:none}
+.nochips .row{display:none}
+</style>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#14202b">
+<link rel="apple-touch-icon" href="icon-192.png">
+</head>
+<body>
+<h1>フィル・ジェネレーター</h1>
+<div class="bars" id="bars"></div>
+
+<div class="ctl">
+<h2>使うリズム</h2>
+<div class="chips" id="rhy"></div>
+<h2>使うドラム</h2>
+<div class="chips" id="drm"></div>
+<div class="line"><span>休符の多さ</span><input type="range" id="rest" min="0" max="70" value="25"><b id="restv">25%</b></div>
+<div class="line"><span>テンポ</span><input type="range" id="bpm" min="40" max="200" value="80"><b id="bpmv">80</b></div>
+<label><input type="checkbox" id="click" checked>再生中は2・4拍だけクリックを鳴らす</label>
+<label style="margin-top:8px"><input type="checkbox" id="chips" checked>S/T/F/Kのボタン表記も表示</label>
+</div>
+<p class="note">4/4・4小節。1拍=1マス幅。S=スネア T=ハイタム F=フロアタム K=キック。ライドと足は止めずに叩く。</p>
+<div class="btns"><button id="gen">新しいフレーズ</button><button class="sec" id="play">▶ 再生</button></div>
+
+<script>
+const RHY=[["whole","全音符",4,1],["half","2分",2,1],["quarter","4分",1,1],["trip","3連",1,3],["six","6連",1,6],["six16","16分",1,4]];
+const DR=["S","T","F","K"];
+const st={rhy:{whole:false,half:true,quarter:true,trip:true,six:true,six16:true},drm:{S:true,T:true,F:true,K:true}};
+let phrase=[];
+
+function box(id,label,obj,key,wrap){const l=document.createElement('label');const c=document.createElement('input');c.type='checkbox';c.checked=obj[key];c.onchange=()=>{obj[key]=c.checked;if(!Object.values(obj).some(Boolean)){obj[key]=true;c.checked=true}};l.append(c,label);wrap.append(l)}
+RHY.forEach(r=>box(r[0],r[1],st.rhy,r[0],document.getElementById('rhy')));
+DR.forEach(d=>box(d,d,st.drm,d,document.getElementById('drm')));
+
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+function genBar(){
+  const p=+document.getElementById('rest').value/100;
+  const drums=DR.filter(d=>st.drm[d]);
+  const evs=[];let pos=0;
+  while(pos<4){
+    const opts=RHY.filter(r=>st.rhy[r[0]]&&pos+r[2]<=4&&(r[2]<2||pos%r[2]===0));
+    const r=opts.length?pick(opts):RHY[2];
+    const slots=[];
+    for(let i=0;i<r[3];i++)slots.push(Math.random()<p?'-':pick(drums));
+    evs.push({pos,dur:r[2],tag:r[1],slots});
+    pos+=r[2];
+  }
+  return evs;
+}
+function gen(){phrase=[0,1,2,3].map(genBar);render()}
+function render(){
+  const w=document.getElementById('bars');w.innerHTML='';
+  phrase.forEach((b,i)=>{
+    const d=document.createElement('div');d.className='bar';d.dataset.i=i;
+    d.innerHTML='<p class="bn">'+(i+1)+'小節目</p><div class="nt"></div>';
+    const row=document.createElement('div');row.className='row';
+    b.forEach(e=>{
+      const ev=document.createElement('div');ev.className='ev';ev.dataset.s=e.pos;ev.dataset.d=e.dur;
+      ev.style.gridColumn=(e.pos+1)+' / span '+e.dur;
+      ev.innerHTML='<div class="tag">'+e.tag+'</div>';
+      const s=document.createElement('div');s.className='slots';
+      e.slots.forEach(x=>{const c=document.createElement('div');c.className='sl '+(x==='-'?'r':x);c.textContent=x==='-'?'–':x;s.append(c)});
+      ev.append(s);row.append(ev);
+    });
+    d.append(row);w.append(d);notate(d.querySelector('.nt'),b);
+  });
+}
+
+// notation (VexFlow): K=f/4 F=a/4 S=c/5 T=e/5 on a percussion staff
+function notate(el,evs){
+  const VF=window.Vex&&Vex.Flow;
+  if(!VF){el.textContent='譜面ライブラリを読み込めませんでした';return}
+  try{
+    const KEY={S:'c/5',T:'e/5',F:'a/4',K:'f/4'};
+    const W=Math.max(el.clientWidth,300);
+    const r=new VF.Renderer(el,VF.Renderer.Backends.SVG);r.resize(W,140);
+    const c=r.getContext();const col=getComputedStyle(document.body).color;c.setFillStyle(col);c.setStrokeStyle(col);
+    const s=new VF.Stave(2,34,W-6);s.addClef('percussion').addTimeSignature('4/4').setContext(c).draw();
+    const all=[],beams=[],tups=[];
+    evs.forEach(e=>{
+      const n=e.slots.length;
+      const d=e.dur===4?'w':e.dur===2?'h':n===1?'q':n===3?'8':'16';
+      const ns=e.slots.map(x=>x==='-'?new VF.StaveNote({keys:['b/4'],duration:d+'r',clef:'percussion'}):new VF.StaveNote({keys:[KEY[x]],duration:d,clef:'percussion',stem_direction:1}));
+      if(n===3)tups.push(new VF.Tuplet(ns,{num_notes:3,notes_occupied:2}));
+      if(n===6)tups.push(new VF.Tuplet(ns,{num_notes:6,notes_occupied:4}));
+      if(n>=3)beams.push(...VF.Beam.generateBeams(ns));
+      all.push(...ns);
+    });
+    const v=new VF.Voice({num_beats:4,beat_value:4}).setStrict(false).addTickables(all);
+    new VF.Formatter().joinVoices([v]).format([v],W-110);
+    v.draw(c,s);
+    beams.forEach(b=>b.setContext(c).draw());
+    tups.forEach(t=>t.setContext(c).draw());
+  }catch(err){el.textContent='譜面を描画できませんでした';console.error(err)}
+}
+let rz;addEventListener('resize',()=>{clearTimeout(rz);rz=setTimeout(render,200)});
+document.getElementById('chips').onchange=e=>document.body.classList.toggle('nochips',!e.target.checked);
+
+// metronome: click on beats 2 and 4, highlight current beat
+let ctx,timer,playing=false,nextT=0,beatN=0,uiq=[];
+function click(t){if(!document.getElementById('click').checked)return;const o=ctx.createOscillator(),g=ctx.createGain();o.frequency.value=1500;g.gain.setValueAtTime(.4,t);g.gain.exponentialRampToValueAtTime(.001,t+.05);o.connect(g).connect(ctx.destination);o.start(t);o.stop(t+.06)}
+function sched(){
+  const sp=60/+document.getElementById('bpm').value;
+  while(nextT<ctx.currentTime+.15){
+    const b=beatN%16,bi=b%4;
+    if(bi===1||bi===3)click(nextT);
+    uiq.push([nextT,b]);
+    nextT+=sp;beatN++;
+    if(beatN%16===0&&document.getElementById('auto')?.checked)gen();
+  }
+}
+function ui(){
+  if(!playing)return;
+  while(uiq.length&&uiq[0][0]<=ctx.currentTime){const b=uiq.shift()[1];hl(Math.floor(b/4),b%4)}
+  requestAnimationFrame(ui);
+}
+function hl(bar,beat){
+  document.querySelectorAll('.bar').forEach((e,i)=>e.classList.toggle('on',i===bar));
+  document.querySelectorAll('.ev').forEach(e=>{
+    if(+e.parentNode.parentNode.dataset.i!==bar){e.classList.remove('beat','on');return}
+    const s=+e.dataset.s,d=+e.dataset.d;e.classList.toggle('beat',true);e.classList.toggle('on',beat>=s&&beat<s+d);
+  });
+}
+function play(){
+  const btn=document.getElementById('play');
+  if(playing){playing=false;clearInterval(timer);btn.textContent='▶ 再生';document.querySelectorAll('.bar,.ev').forEach(e=>e.classList.remove('on'));return}
+  ctx=ctx||new (window.AudioContext||window.webkitAudioContext)();ctx.resume();
+  playing=true;beatN=0;uiq=[];nextT=ctx.currentTime+.1;btn.textContent='■ 停止';
+  timer=setInterval(sched,25);sched();ui();
+}
+document.getElementById('gen').onclick=gen;
+document.getElementById('play').onclick=play;
+document.getElementById('rest').oninput=e=>document.getElementById('restv').textContent=e.target.value+'%';
+document.getElementById('bpm').oninput=e=>document.getElementById('bpmv').textContent=e.target.value;
+gen();
+</script>
+<script>if('serviceWorker' in navigator){addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}))}</script>
+</body>
+</html>
